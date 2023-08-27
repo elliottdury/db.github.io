@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeskBud</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+      body {
+        margin: 20px;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      h1 {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+      }
+
+      .container {
+        width: 500px;
+        height: 200px;
+        overflow: hidden;
+      }
+
+      .main-content {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-gap: 20px;
+        justify-items: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+      }
+
+      button {
+        border: none;
+        background-color: #007BFF;
+        color: white;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 14px;
+        transition: background-color 0.5s ease;
+        width: 100%;
+        height: 80px;
+        /* Set a fixed height for buttons */
+        margin: 5px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      /* Popup Styling */
+      .popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      .popup-content {
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        max-width: 300px;
+        max-width: 500px;
+        text-align: center;
+        position: relative;
+      }
+
+      .popup-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+      }
+
+      .loading-spinner {
+        border: 4px solid rgba(0, 123, 255, 0.3);
+        border-top: 4px solid #007BFF;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* API Test Animation */
+      .test-api-button {
+        position: relative;
+        /* Add this line to create a positioning context */
+        margin-bottom: 10px;
+        /* Add vertical space between buttons */
+      }
+
+      .test-api-button.loading:after {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        position: relative;
+        /* Add this line to align with button text */
+        top: 2px;
+        /* Adjust to align vertically with button text */
+        margin-left: 8px;
+        border-radius: 50%;
+        border: 2px solid #ffffff;
+        border-top-color: transparent;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Add these styles to your existing CSS */
+
+      .character-selection {
+        display: flex;
+        align-items: center;
+      }
+
+      .character-svg {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #prev-character,
+      #next-character {
+        border: none;
+        background-color: #007BFF;
+        font-size: 24px;
+        cursor: pointer;
+        width: 35px;
+        height: 35px;
+      }
+
+      #prev-voice,
+      #next-voice {
+        border: none;
+        background-color: #007BFF;
+        font-size: 24px;
+        cursor: pointer;
+        width: 35px;
+        height: 35px;
+      }
+
+      #next-voice:hover {
+        background-color: #0056b3;
+      }
+
+      #prev-voice:hover {
+        background-color: #0056b3;
+      }
+
+      #prev-character:hover {
+        background-color: #0056b3;
+      }
+
+      #next-character:hover {
+        background-color: #0056b3;
+      }
+
+      .push-button {
+        background-color: #e5383b;
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
+        width: 100%;
+        height: 80px;
+        margin: 5px;
+      }
+
+      .push-button:hover {
+        background-color: #e5383b;
+      }
+
+      .push-button:active {
+        background-color: #c32f33;
+        transform: translateY(2px);
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <h1>DeskBud Development Dashboard</h1>
+    <div class="container">
+      <div class="main-content">
+        <button id="view-api-keys-btn">View API key</button>
+        <button id="connect-to-deskbud-btn">Connect to DeskBud</button>
+        <button id="check-api-connections-btn">Check API connections</button>
+        <button id="serial-monitor-btn">Serial monitor</button>
+        <button id="api-monitor-btn">API monitor</button>
+        <button id="change-characters-btn">Change characters</button>
+        <button id="change-voices-btn">Change voices</button>
+        <button id="talk-btn">Talk</button>
+      </div>
+    </div>
+
+    <!-- Popup for API keys -->
+    <div class="popup" id="api-keys-popup">
+      <div class="popup-content">
+        <span class="popup-close" id="close-api-keys-popup">&times;</span>
+        <h2>API Keys</h2>
+
+        <table style="border-collapse: collapse; width: 100%; border: none; margin-top: 20px;">
+          <tr>
+            <th style="padding: 10px; text-align: left; border-right: 1px solid grey;">API Name</th>
+            <th style="padding: 10px; text-align: left; border-left: 1px solid grey;">API Key</th>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">API Key 1</td>
+            <td style="padding: 10px; font-weight: bold; border-left: 1px solid grey;">12345abcde</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">API Key 2</td>
+            <td style="padding: 10px; font-weight: bold; border-left: 1px solid grey;">67890fghij</td>
+          </tr>
+          <!-- Add more rows as needed -->
+        </table>
+
+      </div>
+    </div>
+
+    <!-- Popup for Connect to DeskBud -->
+    <div class="popup" id="connect-to-deskbud-popup">
+      <div class="popup-content">
+        <span class="popup-close" id="close-connect-to-deskbud-popup">&times;</span>
+        <h2>Connect to DeskBud</h2>
+        <p id="db-connected-status"></p>
+        <div id="loading-animation" style="display: none; margin-top: 20px;">
+          <div class="loading-spinner"></div>
+          <p style="color: #007BFF;">Connecting...</p>
+        </div>
+        <button id="connect-button">Connect</button>
+      </div>
+    </div>
+
+    <!-- Popup for Check API connections -->
+    <div class="popup" id="check-api-connections-popup">
+      <div class="popup-content">
+        <span class="popup-close" id="close-check-api-connections-popup">&times;</span>
+        <h2>Check API Connections</h2>
+        <p>Check API connections details.</p>
+        <div id="api-connections">
+          <button class="test-api-button" data-api="API 1">Test API 1</button>
+          <button class="test-api-button" data-api="API 2">Test API 2</button>
+          <!-- Add more buttons for each API -->
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Popup for Serial Monitor -->
+    <div class="popup" id="serial-monitor-popup">
+      <div class="popup-content">
+        <span class="popup-close" id="close-serial-monitor-popup">&times;</span>
+        <h2>Serial Monitor</h2>
+        <div id="serial-output" style="height: 200px; overflow: auto; border: 1px solid #ccc; border-radius: 5px; padding: 5px;"></div>
+        <button id="start-simulation-button" style="margin-top: 10px">Start listening</button>
+      </div>
+    </div>
+
+
+
+
+    <!-- Popup for API monitor -->
+    <div class="popup" id="api-monitor-popup">
+      <div class="popup-content">
+        <span class="popup-close" id="close-api-monitor-popup">&times;</span>
+        <h2>API request and response monitor</h2>
+        <canvas id="api-monitor-graph" width="400" height="200"></canvas>
+      </div>
+
+    </div>
+
+
+
+    <!-- Popup for Change characters -->
+    <div class="popup" id="change-characters-popup">
+      <div class="popup-content">
+        <span class="popup-close" id="close-change-characters-popup">&times;</span>
+        <h2>Change Characters</h2>
+        <div class="character-selection">
+          <button id="prev-character">&lt;</button>
+          <div class="character-svg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
+              <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4Zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10Z" />
+            </svg>
+          </div>
+          <button id="next-character">&gt;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup for Change voices -->
+    <div class="popup" id="change-voices-popup">
+      <div class="popup-content">
+        <span class="popup-close" id="close-change-voices-popup">&times;</span>
+        <h2>Change Voices</h2>
+        <div class="character-selection">
+          <button id="prev-voice">&lt;</button>
+          <div class="character-svg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-megaphone" viewBox="0 0 16 16">
+              <path d="M13 2.5a1.5 1.5 0 0 1 3 0v11a1.5 1.5 0 0 1-3 0v-.214c-2.162-1.241-4.49-1.843-6.912-2.083l.405 2.712A1 1 0 0 1 5.51 15.1h-.548a1 1 0 0 1-.916-.599l-1.85-3.49a68.14 68.14 0 0 0-.202-.003A2.014 2.014 0 0 1 0 9V7a2.02 2.02 0 0 1 1.992-2.013 74.663 74.663 0 0 0 2.483-.075c3.043-.154 6.148-.849 8.525-2.199V2.5zm1 0v11a.5.5 0 0 0 1 0v-11a.5.5 0 0 0-1 0zm-1 1.35c-2.344 1.205-5.209 1.842-8 2.033v4.233c.18.01.359.022.537.036 2.568.189 5.093.744 7.463 1.993V3.85zm-9 6.215v-4.13a95.09 95.09 0 0 1-1.992.052A1.02 1.02 0 0 0 1 7v2c0 .55.448 1.002 1.006 1.009A60.49 60.49 0 0 1 4 10.065zm-.657.975 1.609 3.037.01.024h.548l-.002-.014-.443-2.966a68.019 68.019 0 0 0-1.722-.082z" />
+            </svg>
+          </div>
+          <button id="next-voice">&gt;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup for Talk -->
+    <div class="popup" id="talk-popup">
+      <div class="popup-content">
+        <span class="popup-close" id="close-talk-popup">&times;</span>
+        <h2>Push to talk</h2>
+        <button id="push-to-talk-btn" class="push-button">Push to Talk</button>
+      </div>
+    </div>
+
+    <script>
+      const apiData = {
+        labels: ['23:56', '23:57', '23:58', '23:59', 'spöktimman'],
+        requests: [12, 19, 8, 5, 11],
+        responses: [12, 19, 8, 0, 11]
+      };
+
+      const apiMonitorGraphCanvas = document.getElementById('api-monitor-graph');
+
+      const apiMonitorGraph = new Chart(apiMonitorGraphCanvas, {
+        type: 'line',
+        data: {
+          labels: apiData.labels,
+          datasets: [{
+              label: 'Requests',
+              data: apiData.requests,
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 2,
+              fill: false // Don't fill area under the line
+            },
+            {
+              label: 'Responses',
+              data: apiData.responses,
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 2,
+              fill: false // Don't fill area under the line
+            }
+          ]
+        },
+        options: {
+          scales: {
+            x: {
+              beginAtZero: true
+            },
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+
+
+      const serialOutput = document.getElementById('serial-output');
+      const startSimulationButton = document.getElementById('start-simulation-button');
+      let simulationInterval = null; // To hold the interval reference
+      let simulationRunning = false; // Renamed the variable
+
+      // Function to start or stop the simulation
+      function toggleSimulation() {
+        simulationRunning = !simulationRunning; // Renamed the variable
+
+        if (simulationRunning) {
+          startSimulationButton.innerHTML = "Stop listening";
+          serialOutput.innerHTML = ""; // Clear previous output
+          simulationInterval = setInterval(simulateSerialOutput, 1000);
+        } else {
+          startSimulationButton.innerHTML = "Start Simulation";
+          clearInterval(simulationInterval);
+        }
+      }
+
+      // Simulate serial monitor output
+      function simulateSerialOutput() {
+        const serialJargon = [
+          "ludvig är gay"
+        ];
+
+        const randomIndex = Math.floor(Math.random() * serialJargon.length);
+        const randomLine = serialJargon[randomIndex];
+        const newLine = document.createElement('p');
+        newLine.textContent = randomLine;
+        serialOutput.appendChild(newLine);
+
+        // Scroll to the bottom of the serial output
+        serialOutput.scrollTop = serialOutput.scrollHeight;
+      }
+
+      // Listen for the "Start Simulation" button click
+      startSimulationButton.addEventListener('click', toggleSimulation);
+
+      const apiButtons = document.querySelectorAll('.test-api-button');
+
+      apiButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          // Show loading animation when button is clicked
+          button.classList.add('loading');
+
+          // Simulate API request (you can replace this with your actual logic)
+          setTimeout(() => {
+            // Remove loading animation after a simulated delay
+            button.classList.remove('loading');
+
+            // Add logic to handle response (for example, show a success indicator)
+            const apiName = button.getAttribute('data-api');
+            alert(`Connection test for ${apiName} successful!`);
+          }, 2000); // Simulating 2 seconds for demonstration
+        });
+      });
+
+      const connectButton = document.getElementById('connect-button');
+      const loadingAnimation = document.getElementById('loading-animation');
+
+      connectButton.addEventListener('click', () => {
+        // Show loading animation
+        loadingAnimation.style.display = 'block';
+
+        // Simulate connection process (you can replace this with your actual logic)
+        setTimeout(() => {
+          loadingAnimation.style.display = 'none';
+          document.getElementById('db-connected-status').innerHTML = "Connected!"
+          document.getElementById('connect-button').style.display = 'none'
+          // Hide loading animation after a timeout
+          // Add your logic here to complete the connection process
+        }, 2000); // Simulating 2 seconds for demonstration
+      });
+
+      // View API keys
+      const viewApiKeysBtn = document.getElementById('view-api-keys-btn');
+      const apiKeysPopup = document.getElementById('api-keys-popup');
+      const closeApiKeysPopup = document.getElementById('close-api-keys-popup');
+
+      viewApiKeysBtn.addEventListener('click', () => {
+        apiKeysPopup.style.display = 'flex';
+      });
+
+      closeApiKeysPopup.addEventListener('click', () => {
+        apiKeysPopup.style.display = 'none';
+      });
+
+      // Connect to DeskBud
+      const connectToDeskBudBtn = document.getElementById('connect-to-deskbud-btn');
+      const connectToDeskBudPopup = document.getElementById('connect-to-deskbud-popup');
+      const closeConnectToDeskBudPopup = document.getElementById('close-connect-to-deskbud-popup');
+
+      connectToDeskBudBtn.addEventListener('click', () => {
+        connectToDeskBudPopup.style.display = 'flex';
+      });
+
+      closeConnectToDeskBudPopup.addEventListener('click', () => {
+        connectToDeskBudPopup.style.display = 'none';
+      });
+
+      // Check API connections
+      const checkApiConnectionsBtn = document.getElementById('check-api-connections-btn');
+      const checkApiConnectionsPopup = document.getElementById('check-api-connections-popup');
+      const closeCheckApiConnectionsPopup = document.getElementById('close-check-api-connections-popup');
+
+      checkApiConnectionsBtn.addEventListener('click', () => {
+        checkApiConnectionsPopup.style.display = 'flex';
+      });
+
+      closeCheckApiConnectionsPopup.addEventListener('click', () => {
+        checkApiConnectionsPopup.style.display = 'none';
+      });
+
+      // Serial monitor
+      const serialMonitorBtn = document.getElementById('serial-monitor-btn');
+      const serialMonitorPopup = document.getElementById('serial-monitor-popup');
+      const closeSerialMonitorPopup = document.getElementById('close-serial-monitor-popup');
+
+      serialMonitorBtn.addEventListener('click', () => {
+        serialMonitorPopup.style.display = 'flex';
+      });
+
+      closeSerialMonitorPopup.addEventListener('click', () => {
+        serialMonitorPopup.style.display = 'none';
+      });
+
+      // API monitor
+      const apiMonitorBtn = document.getElementById('api-monitor-btn');
+      const apiMonitorPopup = document.getElementById('api-monitor-popup');
+      const closeApiMonitorPopup = document.getElementById('close-api-monitor-popup');
+
+      apiMonitorBtn.addEventListener('click', () => {
+        apiMonitorPopup.style.display = 'flex';
+      });
+
+      closeApiMonitorPopup.addEventListener('click', () => {
+        apiMonitorPopup.style.display = 'none';
+      });
+
+      // Change characters
+      const changeCharactersBtn = document.getElementById('change-characters-btn');
+      const changeCharactersPopup = document.getElementById('change-characters-popup');
+      const closeChangeCharactersPopup = document.getElementById('close-change-characters-popup');
+
+      changeCharactersBtn.addEventListener('click', () => {
+        changeCharactersPopup.style.display = 'flex';
+      });
+
+      closeChangeCharactersPopup.addEventListener('click', () => {
+        changeCharactersPopup.style.display = 'none';
+      });
+
+      // Change voices
+      const changeVoicesBtn = document.getElementById('change-voices-btn');
+      const changeVoicesPopup = document.getElementById('change-voices-popup');
+      const closeChangeVoicesPopup = document.getElementById('close-change-voices-popup');
+
+      changeVoicesBtn.addEventListener('click', () => {
+        changeVoicesPopup.style.display = 'flex';
+      });
+
+      closeChangeVoicesPopup.addEventListener('click', () => {
+        changeVoicesPopup.style.display = 'none';
+      });
+      // Talk
+      const talkBtn = document.getElementById('talk-btn');
+      const talkPopup = document.getElementById('talk-popup');
+      const closeTalkPopup = document.getElementById('close-talk-popup');
+
+      talkBtn.addEventListener('click', () => {
+        talkPopup.style.display = 'flex';
+      });
+
+      closeTalkPopup.addEventListener('click', () => {
+        talkPopup.style.display = 'none';
+      });
+
+    </script>
+  </body>
+
+</html>
